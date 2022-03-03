@@ -6,11 +6,15 @@ body {
 	touch-action: none;
 }
 </style>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+<script src="wordlist.js"></script>
 <script>
 
 class Box {
 	constructor(letter) {
 		this.letter = letter;
+		this.colour = "#aaa";
 	}
 }
 function b(x) { return new Box(x); }
@@ -19,9 +23,27 @@ var time;
 var lastTime;
 var ctx;
 var boxes;
+var memories;
+var answer;
+var answerSet;
+
+var allValids = legitWords + guesses;
 
 var boxSize = 50;
 var boxMargin = 10;
+
+function getOverlapIndices(word1, word2) {
+	var word1OverlapIndex = -1;
+	var word2OverlapIndex = -1;
+	for (let i=0;i<word1.length;i++) {
+		for (let j=0;j<word2.length;j++) {
+			if (word1[i] == word2[j]) {
+				return [i,j];
+			}
+		}
+	}
+	return [0,0];
+}
 
 function init() {
 	ctx = document.getElementById("squares").getContext("2d");
@@ -33,6 +55,64 @@ function init() {
 		[b("P"),b("R"),b("S"),b("T"),b("U")],
 		[b("V"),b("W"),b("X"),b("Y"),b("Z")],
 	];
+
+	memories = 
+	[
+		[{},{},{},{},{}],
+		[{},{},{},{},{}],
+		[{},{},{},{},{}],
+		[{},{},{},{},{}],
+		[{},{},{},{},{}]
+	];
+
+	//var rng = new Math.seedrandom(new Date().toJSON().slice(0,10));
+	var rng = new Math.seedrandom();
+
+	var word1;
+	var word2;
+	while (true) {
+		word1 = legitWords[Math.abs(rng.int32()) % legitWords.length];
+		word2 = legitWords[Math.abs(rng.int32()) % legitWords.length];
+		console.log(word1,word2);
+
+		var set1 = new Set(word1);
+		var set2 = new Set(word2);
+
+		// check that words don't have duplicate letters
+		if (word1.length != set1.size) continue;
+		if (word2.length != set2.size) continue;
+
+		// make sure there's only one overlapping letter
+		var wordboth = word1+word2;
+		answerSet = new Set(wordboth);
+		if (wordboth.length != answerSet.size + 1) continue;
+
+		// no q
+		if (word1.includes("q")) continue;
+		if (word2.includes("q")) continue;
+
+		// if we've made it here, we've got a workable solution
+		break;
+	}
+
+	var indices = getOverlapIndices(word1, word2);
+
+	answer = 
+	[
+		[b(""),b(""),b(""),b(""),b("")],
+		[b(""),b(""),b(""),b(""),b("")],
+		[b(""),b(""),b(""),b(""),b("")],
+		[b(""),b(""),b(""),b(""),b("")],
+		[b(""),b(""),b(""),b(""),b("")],
+	];
+
+	for (let i=0; i<word2.length; i++) {
+		answer[indices[0]][i].letter = word2[i];
+	}
+	for (let i=0; i<word1.length; i++) {
+		answer[i][indices[1]].letter = word1[i];
+	}
+
 	draw();
 }
 
@@ -54,8 +134,6 @@ onmousemove = function(e) {
 }
 onmouseup = function(e) {
 	mouseIsDown = false;
-	rowlock = false;
-	columnlock = false;
 }
 
 var boxClickedX;
@@ -92,6 +170,89 @@ ontouchmove = onmousemove;
 
 var lastTime;
 var mouseWasDown;
+
+function colourFromMemory(i,j) {
+	var thisBox = boxes[i][j];
+	var thisLetter = thisBox.letter.toLowerCase();
+	var memory = memories[i][j][thisLetter];
+	if (memory) {
+		thisBox.colour = memory;
+	}
+}
+
+function recolour(i,j) {
+	var thisAnswer = answer[i][j];
+	var thisBox = boxes[i][j];
+	var thisLetter = thisBox.letter.toLowerCase();
+
+	if (thisAnswer.letter == thisLetter) {
+		thisBox.colour = "#2aa617";
+
+		for (let k=0; k<boxes.length; k++) {
+			for (let l=0; l<boxes.length; l++) {
+				memories[k][l][thisLetter] = "#333";
+			}
+		}
+		for (let k=0; k<boxes.length; k++) {
+			memories[i][k][thisLetter] = "#ecc61d";
+		}
+		for (let k=0; k<boxes.length; k++) {
+			memories[k][j][thisLetter] = "#ec721d";
+		}
+		memories[i][j][thisLetter] = thisBox.colour;
+		return;
+	}
+
+	for (let k=0; k<boxes.length;k++) {
+		if (answer[i][k].letter == thisLetter) {
+			thisBox.colour = "#ecc61d"; // orange
+			for (let q=0; q<boxes.length; q++) {
+				memories[q][j][thisLetter] = "#333";
+			}
+			memories[i][j][thisLetter] = thisBox.colour;
+			return;
+		}
+	}
+	for (let k=0; k<boxes.length;k++) {
+		if (answer[k][j].letter == thisLetter) {
+			thisBox.colour = "#ec721d"; // yellow
+			for (let q=0; q<boxes.length; q++) {
+				memories[i][q][thisLetter] = "#333";
+			}
+			memories[i][j][thisLetter] = thisBox.colour;
+			return;
+		}
+	}
+	thisBox.colour = "#333";
+	for (let k=0; k<boxes.length;k++) {
+		memories[i][k][thisLetter] = thisBox.colour;
+		memories[k][j][thisLetter] = thisBox.colour;
+	}
+}
+
+function checkRow(y) {
+	var word = "";
+	for (let i=0; i<boxes.length; i++) {
+		word += boxes[y][i].letter;
+	}
+	word = word.toLowerCase();
+	console.log(word);
+	if (allValids.includes(word)) return word;
+	return "";
+}
+function checkCol(x) {
+	var word = "";
+	for (let i=0; i<boxes.length; i++) {
+		word += boxes[i][x].letter;
+	}
+	word = word.toLowerCase();
+	console.log(word);
+	if (allValids.includes(word)) return word;
+	return "";
+}
+
+var photo = 0;
+var takenPhotos = [];
 function update() {
 	/*
 	var dt = (Date.now() - lastTime) / 1000;
@@ -104,8 +265,83 @@ function update() {
 
 	if (mouseWasDown && !mouseIsDown) {
 		// handle mouse-unclicked things
+
+		if (rowlock) {
+			// check the row that just moved
+			if (checkRow(boxClickedY)) {
+				console.log("Row!");
+				photo = 5;
+				for (let i=0; i<boxes.length; i++) {
+					recolour(boxClickedY,i);
+				}
+			} else {
+				for (let i=0; i<boxes.length; i++) {
+					boxes[boxClickedY][i].colour = "#ccc";
+				}
+			}
+			// check the columns
+			for (let i=0; i<boxes.length; i++) {
+				if (checkCol(i)) {
+					console.log("Col.");
+					photo = 5;
+					for (let k=0; k<boxes.length; k++) {
+						recolour(k,i);
+					}
+				}
+			}
+		}
+		else if (columnlock) {
+			// check the column that just moved
+			if (checkCol(boxClickedX)) {
+				console.log("Col!");
+				photo = 5;
+				for (let i=0; i<boxes.length; i++) {
+					recolour(i,boxClickedX);
+				}
+			} else {
+				for (let i=0; i<boxes.length; i++) {
+					boxes[i][boxClickedX].colour = "#ccc";
+				}
+			}
+			// check the rows
+			for (let i=0; i<boxes.length; i++) {
+				if (checkRow(i)) {
+					console.log("Row.");
+					photo = 5;
+					for (let k=0; k<boxes.length; k++) {
+						recolour(i,k);
+					}
+				}
+			}
+		}
+
+		for (let i=0; i<boxes.length; i++) {
+			for (let j=0; j<boxes.length; j++) {
+				colourFromMemory(i,j);
+			}
+		}
+
+
+		rowlock = false;
+		columnlock = false;
 	}
 	mouseWasDown = mouseIsDown;
+
+	if (photo > 0) {
+		console.log(photo);
+		photo--;
+		if (photo == 1) {
+			photo = 0;
+			console.log("Photo!");
+			var squares = document.getElementById("squares");
+			var history = document.getElementById("history");
+			var newCanvas = document.createElement("canvas");
+			newCanvas = history.appendChild(newCanvas);
+			newCanvas.setAttribute("width","240");
+			newCanvas.setAttribute("height","240");
+			newCanvas.getContext("2d").drawImage(squares,0,0,240,240);
+		}
+	}
 
 	if (mouseIsDown && !columnlock && !rowlock) {
 		if (Math.abs(clickX-mouseX) > 0.2*boxSize) {
@@ -205,7 +441,7 @@ function draw() {
 			}
 			if (alpha < 0.0) alpha = 0.0;
 			ctx.globalAlpha = alpha;
-			ctx.fillStyle = "#aaa";
+			ctx.fillStyle = boxes[y][x].colour;
 			ctx.fillRect(xPos+xNudge,yPos+yNudge,boxSize, boxSize);
 			ctx.globalAlpha = 1.0;
 			ctx.fillStyle = "white";
@@ -226,6 +462,8 @@ function draw() {
 	<div style="text-align:center; margin:auto">
 		<canvas id="squares" width="420" height="420">
 		</canvas>
+	</div>
+	<div id="history" style="width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;text-align:center">
 	</div>
 </body>
 </html>
