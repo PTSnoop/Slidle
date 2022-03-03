@@ -1,0 +1,231 @@
+<html>
+<head>
+<meta name="viewport" content="width=400,initial-scale=1">
+<style>
+body {
+	touch-action: none;
+}
+</style>
+<script>
+
+class Box {
+	constructor(letter) {
+		this.letter = letter;
+	}
+}
+function b(x) { return new Box(x); }
+
+var time;
+var lastTime;
+var ctx;
+var boxes;
+
+var boxSize = 50;
+var boxMargin = 10;
+
+function init() {
+	ctx = document.getElementById("squares").getContext("2d");
+	boxes = 
+	[
+		[b("A"),b("B"),b("C"),b("D"),b("E")],
+		[b("F"),b("G"),b("H"),b("I"),b("J")],
+		[b("K"),b("L"),b("M"),b("N"),b("O")],
+		[b("P"),b("R"),b("S"),b("T"),b("U")],
+		[b("V"),b("W"),b("X"),b("Y"),b("Z")],
+	];
+	draw();
+}
+
+var clickX;
+var clickY;
+var mouseX;
+var mouseY;
+var mouseIsDown;
+var columnlock;
+var rowlock;
+onmousemove = function(e) {
+	if (e.touches) {
+		mouseX = e.touches[0].clientX;
+		mouseY = e.touches[0].clientY;
+	} else {
+		mouseX = e.clientX;
+		mouseY = e.clientY;
+	}
+}
+onmouseup = function(e) {
+	mouseIsDown = false;
+	rowlock = false;
+	columnlock = false;
+}
+
+var boxClickedX;
+var boxClickedY;
+onmousedown = function(e) {
+	columnLock = false;
+	rowLock = false;
+	var squaresCanvas = document.getElementById("squares");
+	if (e.path[0] != squaresCanvas) return;
+
+	mouseIsDown = true;
+	if (e.touches) {
+		clickX = e.touches[0].clientX;
+		clickY = e.touches[0].clientY;
+	} else {
+		clickX = e.clientX;
+		clickY = e.clientY;
+	}
+
+	var rect = squaresCanvas.getBoundingClientRect();
+	var canvasX = clickX - rect.left;
+	var canvasY = clickY - rect.top;
+
+	boxClickedX = Math.floor(canvasX / (boxSize + boxMargin)) - 1;
+	boxClickedY = Math.floor(canvasY / (boxSize + boxMargin)) - 1;
+
+	mouseX = clickX;
+	mouseY = clickY;
+}
+
+ontouchstart = onmousedown;
+ontouchend = onmouseup;
+ontouchmove = onmousemove;
+
+var lastTime;
+var mouseWasDown;
+function update() {
+	/*
+	var dt = (Date.now() - lastTime) / 1000;
+	lastTime = Date.now();
+	if (isNaN(dt))
+	{
+		return;
+	};
+   */
+
+	if (mouseWasDown && !mouseIsDown) {
+		// handle mouse-unclicked things
+	}
+	mouseWasDown = mouseIsDown;
+
+	if (mouseIsDown && !columnlock && !rowlock) {
+		if (Math.abs(clickX-mouseX) > 0.2*boxSize) {
+			rowlock = true;
+		}
+		else if (Math.abs(clickY-mouseY) > 0.2*boxSize) {
+			columnlock = true;
+		}
+	}
+
+	if (columnlock) {
+		yNudge = mouseY - clickY;
+		while (yNudge > 0.6*boxSize) {
+			clickY += boxSize + boxMargin;
+			var jumpbox = boxes[4][boxClickedX];
+			boxes[4][boxClickedX] = boxes[3][boxClickedX];
+			boxes[3][boxClickedX] = boxes[2][boxClickedX];
+			boxes[2][boxClickedX] = boxes[1][boxClickedX];
+			boxes[1][boxClickedX] = boxes[0][boxClickedX];
+			boxes[0][boxClickedX] = jumpbox;
+			yNudge = mouseY - clickY;
+		}
+		while (yNudge < -0.6*boxSize) {
+			clickY -= boxSize + boxMargin;
+			var jumpbox = boxes[0][boxClickedX];
+			boxes[0][boxClickedX] = boxes[1][boxClickedX];
+			boxes[1][boxClickedX] = boxes[2][boxClickedX];
+			boxes[2][boxClickedX] = boxes[3][boxClickedX];
+			boxes[3][boxClickedX] = boxes[4][boxClickedX];
+			boxes[4][boxClickedX] = jumpbox;
+			yNudge = mouseY - clickY;
+		}
+	}
+	else if (rowlock) {
+		xNudge = mouseX - clickX;
+		while (xNudge > 0.6*boxSize) {
+			clickX += boxSize + boxMargin;
+			var jumpbox = boxes[boxClickedY][4];
+			boxes[boxClickedY][4] = boxes[boxClickedY][3];
+			boxes[boxClickedY][3] = boxes[boxClickedY][2];
+			boxes[boxClickedY][2] = boxes[boxClickedY][1];
+			boxes[boxClickedY][1] = boxes[boxClickedY][0];
+			boxes[boxClickedY][0] = jumpbox;
+			xNudge = mouseX - clickX;
+		}
+		while (xNudge < -0.6*boxSize) {
+			clickX -= boxSize + boxMargin;
+			var jumpbox = boxes[boxClickedY][0];
+			boxes[boxClickedY][0] = boxes[boxClickedY][1];
+			boxes[boxClickedY][1] = boxes[boxClickedY][2];
+			boxes[boxClickedY][2] = boxes[boxClickedY][3];
+			boxes[boxClickedY][3] = boxes[boxClickedY][4];
+			boxes[boxClickedY][4] = jumpbox;
+			xNudge = mouseX - clickX;
+		}
+	}
+}
+
+function draw() {
+	
+	update();
+
+	ctx.fillStyle = "white";
+	ctx.fillRect(0,0,ctx.canvas.width, ctx.canvas.height);
+
+	for (let y=0; y<boxes.length;++y) {
+		for (let x=0; x<boxes[y].length;++x) {
+
+			var xPos = (x+1)*(boxSize+boxMargin);
+			var yPos = (y+1)*(boxSize+boxMargin);
+
+			var xNudge = 0;
+			var yNudge = 0;
+
+			if (columnlock && x == boxClickedX) {
+				yNudge = mouseY - clickY;
+			}
+			if (rowlock && y == boxClickedY) {
+				xNudge = mouseX - clickX;
+			}
+
+			ctx.font = "bold 32px Arial";
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			var alpha = 255;
+			if (x == 0 && xNudge < 0) {
+				alpha = 1.0+xNudge/(boxSize/2);
+			}
+			else if (x == 4 && xNudge > 0) {
+				alpha = 1.0-xNudge/(boxSize/2);
+			}
+			if (y == 0 && yNudge < 0) {
+				alpha = 1.0+yNudge/(boxSize/2);
+			}
+			else if (y == 4 && yNudge > 0) {
+				alpha = 1.0-yNudge/(boxSize/2);
+			}
+			if (alpha < 0.0) alpha = 0.0;
+			ctx.globalAlpha = alpha;
+			ctx.fillStyle = "#aaa";
+			ctx.fillRect(xPos+xNudge,yPos+yNudge,boxSize, boxSize);
+			ctx.globalAlpha = 1.0;
+			ctx.fillStyle = "white";
+			ctx.fillText(boxes[y][x].letter,xPos+(boxSize/2)+xNudge,yPos+(boxSize/2)+yNudge);
+		}
+	}
+
+	if (window.requestAnimationFrame)
+		window.requestAnimationFrame(draw);
+	else if (window.mozRequestAnimationFrame)
+		window.mozRequestAnimationFrame(draw);
+	else if (window.webkitRequestAnimationFrame)
+		window.webkitRequestAnimationFrame(draw);
+}
+</script>
+</head>
+<body onload='init()'>
+	<div style="text-align:center; margin:auto">
+		<canvas id="squares" width="420" height="420">
+		</canvas>
+	</div>
+</body>
+</html>
