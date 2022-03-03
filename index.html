@@ -1,9 +1,16 @@
 <html>
 <head>
-<meta name="viewport" content="width=400,initial-scale=1">
+<meta name="viewport" content="width=440,initial-scale=0.9,user-scalable=no">
 <style>
 body {
 	touch-action: none;
+}
+.footer {
+   position: fixed;
+   left: 0;
+   bottom: 0;
+   width: 100%;
+   text-align: center;
 }
 </style>
 
@@ -14,7 +21,7 @@ body {
 class Box {
 	constructor(letter) {
 		this.letter = letter;
-		this.colour = "#aaa";
+		this.colour = "#ccc";
 	}
 }
 function b(x) { return new Box(x); }
@@ -225,9 +232,10 @@ function recolour(i,j) {
 	}
 	thisBox.colour = "#333";
 	for (let k=0; k<boxes.length;k++) {
-		memories[i][k][thisLetter] = thisBox.colour;
-		memories[k][j][thisLetter] = thisBox.colour;
+		memories[i][k][thisLetter] = "#777";
+		memories[k][j][thisLetter] = "#777";
 	}
+	memories[i][j][thisLetter] = "#333";
 }
 
 function checkRow(y) {
@@ -237,7 +245,10 @@ function checkRow(y) {
 	}
 	word = word.toLowerCase();
 	console.log(word);
-	if (allValids.includes(word)) return word;
+	if (allValids.includes(word)) {
+		console.log("Legit!");
+		return word;
+	}
 	return "";
 }
 function checkCol(x) {
@@ -247,12 +258,14 @@ function checkCol(x) {
 	}
 	word = word.toLowerCase();
 	console.log(word);
-	if (allValids.includes(word)) return word;
+	if (allValids.includes(word)) {
+		return word;
+	}
 	return "";
 }
 
-var photo = 0;
-var takenPhotos = [];
+var photo = 5;
+var takenPhotos = new Set();
 function update() {
 	/*
 	var dt = (Date.now() - lastTime) / 1000;
@@ -268,9 +281,14 @@ function update() {
 
 		if (rowlock) {
 			// check the row that just moved
-			if (checkRow(boxClickedY)) {
-				console.log("Row!");
-				photo = 5;
+			var checkedRow = checkRow(boxClickedY);
+			console.log("",checkedRow);
+			if (checkedRow) {
+				checkedRow += "r" + boxClickedY;
+				if (!takenPhotos.has(checkedRow)) {
+					photo = 5;
+				}
+				takenPhotos.add(checkedRow);
 				for (let i=0; i<boxes.length; i++) {
 					recolour(boxClickedY,i);
 				}
@@ -281,9 +299,13 @@ function update() {
 			}
 			// check the columns
 			for (let i=0; i<boxes.length; i++) {
-				if (checkCol(i)) {
-					console.log("Col.");
-					photo = 5;
+				var checkedCol = checkCol(i);
+				if (checkedCol) {
+					checkedCol += "c" + i;
+					if (!takenPhotos.has(checkedCol)) {
+						photo = 5;
+					}
+					takenPhotos.add(checkedCol);
 					for (let k=0; k<boxes.length; k++) {
 						recolour(k,i);
 					}
@@ -292,9 +314,13 @@ function update() {
 		}
 		else if (columnlock) {
 			// check the column that just moved
-			if (checkCol(boxClickedX)) {
-				console.log("Col!");
-				photo = 5;
+			var checkedCol = checkCol(boxClickedX);
+			if (checkedCol) {
+				checkedCol += "c" + boxClickedX;
+				if (!takenPhotos.has(checkedCol)) {
+					photo = 5;
+				}
+				takenPhotos.add(checkedCol);
 				for (let i=0; i<boxes.length; i++) {
 					recolour(i,boxClickedX);
 				}
@@ -305,9 +331,13 @@ function update() {
 			}
 			// check the rows
 			for (let i=0; i<boxes.length; i++) {
-				if (checkRow(i)) {
-					console.log("Row.");
-					photo = 5;
+				var checkedRow = checkRow(i);
+				if (checkedRow) {
+					checkedRow += "r" + i;
+					if (!takenPhotos.has(checkedRow)) {
+						photo = 5;
+					}
+					takenPhotos.add(checkedRow);
 					for (let k=0; k<boxes.length; k++) {
 						recolour(i,k);
 					}
@@ -458,12 +488,14 @@ function draw() {
 }
 </script>
 </head>
-<body onload='init()'>
+<body onload='init()' style="width:100%;min-width:100%;margin:0">
 	<div style="text-align:center; margin:auto">
 		<canvas id="squares" width="420" height="420">
 		</canvas>
 	</div>
-	<div id="history" style="width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;text-align:center">
+	<div class="footer">
+		<div id="history" style="width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;text-align:center;touch-action:pan-x">
+		</div>
 	</div>
 </body>
 </html>
