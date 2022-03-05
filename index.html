@@ -14,7 +14,7 @@ body {
 }
 </style>
 
-<script src="//cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
 <script src="wordlist.js"></script>
 <script>
 
@@ -138,14 +138,20 @@ onmousemove = function(e) {
 		mouseX = e.clientX;
 		mouseY = e.clientY;
 	}
+	drawframes = 60;
+	draw();
 }
 onmouseup = function(e) {
 	mouseIsDown = false;
+	drawframes = 60;
+	draw();
 }
 
 var boxClickedX;
 var boxClickedY;
+var drawframes = 60;
 onmousedown = function(e) {
+	console.log("Down");
 	columnLock = false;
 	rowLock = false;
 	var squaresCanvas = document.getElementById("squares");
@@ -167,8 +173,17 @@ onmousedown = function(e) {
 	boxClickedX = Math.floor(canvasX / (boxSize + boxMargin)) - 1;
 	boxClickedY = Math.floor(canvasY / (boxSize + boxMargin)) - 1;
 
+	if (boxClickedX < 0 || boxClickedY < 0 || boxClickedX > 4 || boxClickedY > 4) {
+		mouseIsDown = false;
+		boxClickedX = 0;
+		boxClickedY = 0;
+	}
+
 	mouseX = clickX;
 	mouseY = clickY;
+
+	drawframes = 60;
+	draw();
 }
 
 ontouchstart = onmousedown;
@@ -232,8 +247,10 @@ function recolour(i,j) {
 	}
 	thisBox.colour = "#333";
 	for (let k=0; k<boxes.length;k++) {
-		memories[i][k][thisLetter] = "#777";
-		memories[k][j][thisLetter] = "#777";
+		if (!memories[i][k][thisLetter])
+			memories[i][k][thisLetter] = "#777";
+		if (!memories[k][j][thisLetter])
+			memories[k][j][thisLetter] = "#777";
 	}
 	memories[i][j][thisLetter] = "#333";
 }
@@ -264,7 +281,7 @@ function checkCol(x) {
 	return "";
 }
 
-var photo = 5;
+var photo = 0;
 var takenPhotos = new Set();
 function update() {
 	/*
@@ -430,6 +447,7 @@ function update() {
 	}
 }
 
+var lastDrawRequestId = 0;
 function draw() {
 	
 	update();
@@ -479,12 +497,12 @@ function draw() {
 		}
 	}
 
-	if (window.requestAnimationFrame)
-		window.requestAnimationFrame(draw);
-	else if (window.mozRequestAnimationFrame)
-		window.mozRequestAnimationFrame(draw);
-	else if (window.webkitRequestAnimationFrame)
-		window.webkitRequestAnimationFrame(draw);
+	console.log(drawframes);
+	if (drawframes > 0) {
+		drawframes--;
+		window.cancelAnimationFrame(lastDrawRequestId);
+		lastDrawRequestId = window.requestAnimationFrame(draw);
+	}
 }
 </script>
 </head>
