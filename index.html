@@ -1,9 +1,18 @@
 <html>
 <head>
 <meta name="viewport" content="width=440,initial-scale=0.9,user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@600;800&display=swap" rel="stylesheet">
 <style>
 body {
 	touch-action: none;
+	font-family: 'Raleway', sans-serif;
+}
+canvas {
+}
+p {
+	font-size: 20px;
 }
 .footer {
    position: fixed;
@@ -12,19 +21,117 @@ body {
    width: 100%;
    text-align: center;
 }
+
+.win-right { 
+	display:inline-block; 
+	height:300px; 
+	margin-top:60px; 
+	margin-bottom:60px; 
+	overflow:hidden; 
+	transition: width 0.2s;
+}
+.win-right-shrink {
+	width:0px;
+}
+.win-right-expand {
+	width: 160px;
+}
+
+.win-down {
+	display:inline-block;
+	background-color:#eee; 
+	height:160px; 
+	width:300px;
+	overflow:hidden; 
+	transition: height 0.2s;
+	margin:0;
+}
+.win-down-shrink {
+	height: 0px;
+}
+.win-down-expand {
+	height: 160px;
+}
+.sharebutton {
+	display:inline-block;
+	background-color:#2aa617;
+	color:#fff;
+	font-weight:bold;
+	font-size: 20px;
+	padding:8px 30px 8px 30px;
+	border-radius:5px;
+	cursor: pointer;
+}
+.sharebutton:hover {
+	background-color:#3bba27;
+}
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
 <script src="wordlist.js"></script>
 <script>
+
+function findGetParameter(parameterName) {
+    var result = null,
+        tmp = [];
+    location.search
+        .substr(1)
+        .split("&")
+        .forEach(function (item) {
+          tmp = item.split("=");
+          if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+        });
+    return result;
+}
+
+const Colour = {
+	LightGrey: "#ccc",
+	Green: "#2aa617",
+	Orange: "#ec721d",
+	Yellow: "#ecc61d",
+	DarkGrey: "#333",
+	MediumGrey: "#777"
+}
 
 class Box {
 	constructor(letter) {
 		this.letter = letter;
-		this.colour = "#ccc";
+		this.colour = Colour.LightGrey;
 	}
 }
 function b(x) { return new Box(x); }
+
+class SaveData {
+	constructor() {
+		this.today = "";
+		this.emojiHistory = "";
+	}
+	saveRow(y) {
+		for (let i=0;i<boxes.length;i++) {
+			this.emojiHistory += this.boxToEmoji(boxes[y][i]);
+		}
+		this.emojiHistory += '\n';
+		console.log(this.emojiHistory);
+		
+	}
+	saveCol(x) {
+		for (let i=0;i<boxes.length;i++) {
+			this.emojiHistory += this.boxToEmoji(boxes[i][x]);
+		}
+		this.emojiHistory += '\n';
+		console.log(this.emojiHistory);
+	}
+	boxToEmoji(box) {
+		console.log(box);
+		if (box.colour == Colour.Green)    return '\uD83D\uDFE9';
+		if (box.colour == Colour.Yellow)   return '\uD83D\uDFE8';
+		if (box.colour == Colour.Orange)   return '\uD83D\uDFE7';
+		if (box.colour == Colour.DarkGrey) return '\u2B1B';
+		return '\u2B1C';
+	}
+}
+
+var saveData = new SaveData();
 
 var time;
 var lastTime;
@@ -72,8 +179,13 @@ function init() {
 		[{},{},{},{},{}]
 	];
 
-	//var rng = new Math.seedrandom(new Date().toJSON().slice(0,10));
-	var rng = new Math.seedrandom();
+	saveData.today = new Date().toJSON().slice(0,10);
+	var rng;
+	if (findGetParameter("practice")) {
+		rng = new Math.seedrandom();
+	} else {
+		rng = new Math.seedrandom(saveData.today);
+	}
 
 	var word1;
 	var word2;
@@ -151,7 +263,7 @@ var boxClickedX;
 var boxClickedY;
 var drawframes = 60;
 onmousedown = function(e) {
-	console.log("Down");
+	if (wonAlready) return;
 	columnLock = false;
 	rowLock = false;
 	var squaresCanvas = document.getElementById("squares");
@@ -208,18 +320,18 @@ function recolour(i,j) {
 	var thisLetter = thisBox.letter.toLowerCase();
 
 	if (thisAnswer.letter == thisLetter) {
-		thisBox.colour = "#2aa617";
+		thisBox.colour = Colour.Green;
 
 		for (let k=0; k<boxes.length; k++) {
 			for (let l=0; l<boxes.length; l++) {
-				memories[k][l][thisLetter] = "#333";
+				memories[k][l][thisLetter] = Colour.DarkGrey;
 			}
 		}
 		for (let k=0; k<boxes.length; k++) {
-			memories[i][k][thisLetter] = "#ecc61d";
+			memories[i][k][thisLetter] = Colour.Yellow;
 		}
 		for (let k=0; k<boxes.length; k++) {
-			memories[k][j][thisLetter] = "#ec721d";
+			memories[k][j][thisLetter] = Colour.Orange;
 		}
 		memories[i][j][thisLetter] = thisBox.colour;
 		return;
@@ -227,9 +339,9 @@ function recolour(i,j) {
 
 	for (let k=0; k<boxes.length;k++) {
 		if (answer[i][k].letter == thisLetter) {
-			thisBox.colour = "#ecc61d"; // orange
+			thisBox.colour = Colour.Yellow;
 			for (let q=0; q<boxes.length; q++) {
-				memories[q][j][thisLetter] = "#333";
+				memories[q][j][thisLetter] = Colour.DarkGrey;
 			}
 			memories[i][j][thisLetter] = thisBox.colour;
 			return;
@@ -237,22 +349,22 @@ function recolour(i,j) {
 	}
 	for (let k=0; k<boxes.length;k++) {
 		if (answer[k][j].letter == thisLetter) {
-			thisBox.colour = "#ec721d"; // yellow
+			thisBox.colour = Colour.Orange;
 			for (let q=0; q<boxes.length; q++) {
-				memories[i][q][thisLetter] = "#333";
+				memories[i][q][thisLetter] = Colour.DarkGrey;
 			}
 			memories[i][j][thisLetter] = thisBox.colour;
 			return;
 		}
 	}
-	thisBox.colour = "#333";
+	thisBox.colour = Colour.DarkGrey;
 	for (let k=0; k<boxes.length;k++) {
 		if (!memories[i][k][thisLetter])
-			memories[i][k][thisLetter] = "#777";
+			memories[i][k][thisLetter] = Colour.MediumGrey;
 		if (!memories[k][j][thisLetter])
-			memories[k][j][thisLetter] = "#777";
+			memories[k][j][thisLetter] = Colour.MediumGrey;
 	}
-	memories[i][j][thisLetter] = "#333";
+	memories[i][j][thisLetter] = Colour.DarkGrey;
 }
 
 function checkRow(y) {
@@ -281,6 +393,7 @@ function checkCol(x) {
 	return "";
 }
 
+var wonAlready = false;
 var photo = 0;
 var takenPhotos = new Set();
 function update() {
@@ -299,15 +412,15 @@ function update() {
 		if (rowlock) {
 			// check the row that just moved
 			var checkedRow = checkRow(boxClickedY);
-			console.log("",checkedRow);
 			if (checkedRow) {
-				checkedRow += "r" + boxClickedY;
-				if (!takenPhotos.has(checkedRow)) {
-					photo = 5;
-				}
-				takenPhotos.add(checkedRow);
 				for (let i=0; i<boxes.length; i++) {
 					recolour(boxClickedY,i);
+				}
+				checkedRow += "r" + boxClickedY;
+				if (!takenPhotos.has(checkedRow)) {
+					takenPhotos.add(checkedRow);
+					photo = 5;
+					saveData.saveRow(boxClickedY);
 				}
 			} else {
 				for (let i=0; i<boxes.length; i++) {
@@ -318,13 +431,14 @@ function update() {
 			for (let i=0; i<boxes.length; i++) {
 				var checkedCol = checkCol(i);
 				if (checkedCol) {
-					checkedCol += "c" + i;
-					if (!takenPhotos.has(checkedCol)) {
-						photo = 5;
-					}
-					takenPhotos.add(checkedCol);
 					for (let k=0; k<boxes.length; k++) {
 						recolour(k,i);
+					}
+					checkedCol += "c" + i;
+					if (!takenPhotos.has(checkedCol)) {
+						takenPhotos.add(checkedCol);
+						photo = 5;
+						saveData.saveCol(i);
 					}
 				}
 			}
@@ -333,13 +447,14 @@ function update() {
 			// check the column that just moved
 			var checkedCol = checkCol(boxClickedX);
 			if (checkedCol) {
-				checkedCol += "c" + boxClickedX;
-				if (!takenPhotos.has(checkedCol)) {
-					photo = 5;
-				}
-				takenPhotos.add(checkedCol);
 				for (let i=0; i<boxes.length; i++) {
 					recolour(i,boxClickedX);
+				}
+				checkedCol += "c" + boxClickedX;
+				if (!takenPhotos.has(checkedCol)) {
+					takenPhotos.add(checkedCol);
+					photo = 5;
+					saveData.saveCol(boxClickedX);
 				}
 			} else {
 				for (let i=0; i<boxes.length; i++) {
@@ -350,13 +465,14 @@ function update() {
 			for (let i=0; i<boxes.length; i++) {
 				var checkedRow = checkRow(i);
 				if (checkedRow) {
-					checkedRow += "r" + i;
-					if (!takenPhotos.has(checkedRow)) {
-						photo = 5;
-					}
-					takenPhotos.add(checkedRow);
 					for (let k=0; k<boxes.length; k++) {
 						recolour(i,k);
+					}
+					checkedRow += "r" + i;
+					if (!takenPhotos.has(checkedRow)) {
+						takenPhotos.add(checkedRow);
+						photo = 5;
+						saveData.saveRow(i);
 					}
 				}
 			}
@@ -368,6 +484,24 @@ function update() {
 			}
 		}
 
+		if (!wonAlready) {
+			var won = true;
+			for (let i=0; i<boxes.length; i++) {
+				for (let j=0; j<boxes.length; j++) {
+					var answerletter = answer[i][j].letter;
+					if (!answerletter) continue;
+					var currentletter = boxes[i][j].letter.toLowerCase();
+					if (currentletter != answerletter) 
+					{
+						won = false;
+					}
+				}
+			}
+			if (won) {
+				wonAlready = true;
+				win();
+			}
+		}
 
 		rowlock = false;
 		columnlock = false;
@@ -375,7 +509,6 @@ function update() {
 	mouseWasDown = mouseIsDown;
 
 	if (photo > 0) {
-		console.log(photo);
 		photo--;
 		if (photo == 1) {
 			photo = 0;
@@ -471,7 +604,7 @@ function draw() {
 				xNudge = mouseX - clickX;
 			}
 
-			ctx.font = "bold 32px Arial";
+			ctx.font = "bold 32px Raleway";
 			ctx.textAlign = "center";
 			ctx.textBaseline = "middle";
 			var alpha = 255;
@@ -497,19 +630,88 @@ function draw() {
 		}
 	}
 
-	console.log(drawframes);
 	if (drawframes > 0) {
 		drawframes--;
 		window.cancelAnimationFrame(lastDrawRequestId);
 		lastDrawRequestId = window.requestAnimationFrame(draw);
 	}
 }
+
+function win() {
+	var winbox;
+	if (document.documentElement.clientHeight > 850) {
+		// we've got room for the vertical box
+		winbox = document.getElementById("win-down");
+		winbox.classList.remove("win-down-shrink");
+		winbox.classList.add("win-down-expand");
+	} else {
+		winbox = document.getElementById("win-right");
+		winbox.classList.remove("win-right-shrink");
+		winbox.classList.add("win-right-expand");
+	}
+}
+
+function share() {
+	var guesses = saveData.emojiHistory.split("\n").length-1;
+	var sharestring = "Daily Slidle " + saveData.today + " - " + guesses + "\n";
+	sharestring += saveData.emojiHistory;
+	navigator.clipboard.writeText(sharestring);
+	alert("Copied to clipboard!");
+}
+
+function secondTimer() {
+	var now = new Date();
+	var midnight = new Date();
+	midnight.setDate(now.getDate()+1);
+	midnight.setHours(0,0,0);
+
+	var distance = midnight - now;
+
+	var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+	var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+	var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+	var timertext = hours.toString().padStart(2,"0") + ":" + minutes.toString().padStart(2,"0") + ":" + seconds.toString().padStart(2,"0")
+
+	var timer1 = document.getElementById("timer");
+	timer1.innerHTML = timertext;
+	var timer2 = document.getElementById("timer2");
+	timer2.innerHTML = timertext;
+
+}
+setInterval(secondTimer, 1000);
 </script>
 </head>
 <body onload='init()' style="width:100%;min-width:100%;margin:0">
-	<div style="text-align:center; margin:auto">
-		<canvas id="squares" width="420" height="420">
-		</canvas>
+	<div style="text-align:center; margin:auto;">
+		<div style="height:420px">
+			<canvas id="squares" width="420" height="420" style="display:inline-block;">
+			</canvas>
+			<div id="win-right" class="win-right win-right-shrink">
+				<!-- Why is vertical centering in css this hard -->
+				<!-- I give up, I'm just using a table -->
+				<table style="width:160px;";>
+					<tr style="text-align:center; vertical-align: middle">
+						<td style="height:300px; width:160px; background-color:#eee">
+							<div style="line-height:1.5">
+								<p style="font-weight:bold">COMPLETE!</p>
+								<p>Next Slidle in<br />
+								<span id="timer">10:30:08</span></p>
+								<div class="sharebutton" onclick="share()">SHARE</div>
+							</div>
+						</td>
+				</tr>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div style="text-align:center; margin:auto;">
+		<div id="win-down" class="win-down win-down-shrink">
+							<div style="line-height:1.0">
+								<p style="font-weight:bold">COMPLETE!</p>
+								<p>Next Slidle in <span id="timer2">10:30:08</span></p>
+								<div class="sharebutton" onclick="share()">SHARE</div>
+							</div>
+		</div>
 	</div>
 	<div class="footer">
 		<div id="history" style="width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;text-align:center;touch-action:pan-x">
