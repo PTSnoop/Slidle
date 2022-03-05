@@ -105,6 +105,7 @@ class SaveData {
 	constructor() {
 		this.today = "";
 		this.emojiHistory = "";
+		this.colourblind = false;
 	}
 	saveRow(y) {
 		for (let i=0;i<boxes.length;i++) {
@@ -498,6 +499,7 @@ function update() {
 				}
 			}
 			if (won) {
+				photo = 5;
 				wonAlready = true;
 				win();
 			}
@@ -623,7 +625,29 @@ function draw() {
 			if (alpha < 0.0) alpha = 0.0;
 			ctx.globalAlpha = alpha;
 			ctx.fillStyle = boxes[y][x].colour;
-			ctx.fillRect(xPos+xNudge,yPos+yNudge,boxSize, boxSize);
+
+			var xSquish = 0;
+			var ySquish = 0;
+			if (saveData.colourblind) {
+				if (boxes[y][x].colour == Colour.LightGrey || boxes[y][x].colour == Colour.DarkGrey || boxes[y][x].colour == Colour.MediumGrey) {
+					xSquish = 6;
+					ySquish = 6;
+				}
+				else if (boxes[y][x].colour == Colour.Yellow) {
+					xSquish = -6;
+					ySquish = 16;
+				}
+				else if (boxes[y][x].colour == Colour.Orange) {
+					xSquish = 16;
+					ySquish = -6;
+				}
+				else if (boxes[y][x].colour == Colour.Green) {
+					xSquish = -4;
+					ySquish = -4;
+				}
+			}
+
+			ctx.fillRect(xPos+xNudge+(xSquish/2),yPos+yNudge+(ySquish/2),boxSize-xSquish, boxSize-ySquish);
 			ctx.globalAlpha = 1.0;
 			ctx.fillStyle = "white";
 			ctx.fillText(boxes[y][x].letter,xPos+(boxSize/2)+xNudge,yPos+(boxSize/2)+yNudge);
@@ -655,8 +679,9 @@ function share() {
 	var guesses = saveData.emojiHistory.split("\n").length-1;
 	var sharestring = "Daily Slidle " + saveData.today + " - " + guesses + "\n";
 	sharestring += saveData.emojiHistory;
-	navigator.clipboard.writeText(sharestring);
-	alert("Copied to clipboard!");
+	navigator.clipboard.writeText(sharestring).then(() => {
+		alert("Copied to clipboard!");
+	})
 }
 
 function secondTimer() {
