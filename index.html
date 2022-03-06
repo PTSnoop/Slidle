@@ -4,23 +4,114 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@600;800&display=swap" rel="stylesheet">
+<script src="https://kit.fontawesome.com/cefac4a8d1.js" crossorigin="anonymous"></script>
 <style>
 body {
 	touch-action: none;
 	user-select: none;
 	font-family: 'Raleway', sans-serif;
+	font-size: 20px;
+}
+
+body {
+    background-color: white;
+    color: black;
 }
 canvas {
 }
 p {
 	font-size: 20px;
 }
+table {
+	font-size: 20px;
+}
+input[type=checkbox]
+{
+  /* Double-sized Checkboxes */
+  -ms-transform: scale(2); /* IE */
+  -moz-transform: scale(2); /* FF */
+  -webkit-transform: scale(2); /* Safari and Chrome */
+  -o-transform: scale(2); /* Opera */
+  transform: scale(2);
+  padding: 10px;
+}
+.helpbox-container {
+	position: fixed;
+	top: 0;
+	right: 0;
+	width: 100%;
+	text-align: center;
+}
+.helpbox {
+	width: 800px;
+	max-width: 80%;
+	background-color: #fff;
+	transition: max-height 0.2s;
+	display:inline-block; 
+	margin-top:40px;
+	overflow-y:scroll;
+}
+.helpbox-shrink {
+	max-height: 0px;
+}
+.helpbox-expand {
+	border: solid #ccc;
+	max-height: 85vh;
+}
+
+.demobox {
+	display: inline-block;
+	text-align: center;
+	color: white;
+	font-size: 24px;
+	width: 36px;
+	height: 34px;
+	padding-top: 4px;
+	font-weight: bold;
+	margin-top: 5px;
+
+}
+.green {
+	background-color: #2aa617;
+}
+.orange {
+	background-color: #ec721d;
+}
+.yellow {
+	background-color: #ecc61d;
+}
+.darkgrey {
+	background-color: #333;
+}
+.mediumgrey {
+	background-color: #777;
+}
+.lightgrey {
+	background-color: #ccc;
+}
+
+.left-corner {
+	position: fixed;
+	top: 0;
+	left: 0;
+	text-align: left;
+}
+.right-corner {
+	position: fixed;
+	top: 0;
+	right: 0;
+	text-align: right;
+}
 .footer {
-   position: fixed;
-   left: 0;
-   bottom: 0;
-   width: 100%;
-   text-align: center;
+	position: fixed;
+	left: 0;
+	bottom: 0;
+	width: 100%;
+	text-align: center;
+}
+
+.block-types-table {
+	border-spacing: 14px;
 }
 
 .win-right { 
@@ -66,6 +157,28 @@ p {
 .sharebutton:hover {
 	background-color:#3bba27;
 }
+  @media screen and (prefers-color-scheme: dark) {
+	  body {
+		  background-color: black;
+		  color: white;
+	  }
+	  .helpbox {
+		  background-color: #000;
+	  }
+	  .demobox {
+		  color: black;
+	  }
+	  .darkgrey {
+		  background-color: #ccc;
+	  }
+	  .mediumgrey {
+		  background-color: #999;
+	  }
+	  .lightgrey {
+		  background-color: #555;
+	  }
+  }
+
 </style>
 
 <script src="//cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
@@ -85,14 +198,25 @@ function findGetParameter(parameterName) {
     return result;
 }
 
-const Colour = {
+var LightColour = {
 	LightGrey: "#ccc",
 	Green: "#2aa617",
 	Orange: "#ec721d",
 	Yellow: "#ecc61d",
 	DarkGrey: "#333",
-	MediumGrey: "#777"
+	MediumGrey: "#777",
 }
+
+var DarkColour = {
+	Green: "#2aa617",
+	Orange: "#ec721d",
+	Yellow: "#ecc61d",
+	DarkGrey: "#ccc",
+	MediumGrey: "#999",
+	LightGrey: "#555",
+}
+
+var Colour = LightColour;
 
 class Box {
 	constructor(letter) {
@@ -107,24 +231,28 @@ class SaveData {
 		this.today = "";
 		this.emojiHistory = "";
 		this.colourblind = false;
+
+		this.darkmode = false;
+		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+			this.darkmode = true;
+			Colour = DarkColour;
+		} else {
+			Colour = LightColour;
+		}
 	}
 	saveRow(y) {
 		for (let i=0;i<boxes.length;i++) {
 			this.emojiHistory += this.boxToEmoji(boxes[y][i]);
 		}
 		this.emojiHistory += '\n';
-		console.log(this.emojiHistory);
-		
 	}
 	saveCol(x) {
 		for (let i=0;i<boxes.length;i++) {
 			this.emojiHistory += this.boxToEmoji(boxes[i][x]);
 		}
 		this.emojiHistory += '\n';
-		console.log(this.emojiHistory);
 	}
 	boxToEmoji(box) {
-		console.log(box);
 		if (box.colour == Colour.Green)    return '\uD83D\uDFE9';
 		if (box.colour == Colour.Yellow)   return '\uD83D\uDFE8';
 		if (box.colour == Colour.Orange)   return '\uD83D\uDFE7';
@@ -133,7 +261,7 @@ class SaveData {
 	}
 }
 
-var saveData = new SaveData();
+var saveData;
 
 var time;
 var lastTime;
@@ -162,6 +290,7 @@ function getOverlapIndices(word1, word2) {
 }
 
 function init() {
+	saveData = new SaveData();
 	ctx = document.getElementById("squares").getContext("2d");
 	boxes = 
 	[
@@ -267,7 +396,6 @@ onmousedown = function(e) {
 	columnLock = false;
 	rowLock = false;
 	var squaresCanvas = document.getElementById("squares");
-	console.log(e)
 	if (e.srcElement != squaresCanvas) return;
 
 	mouseIsDown = true;
@@ -422,7 +550,7 @@ function update() {
 				}
 			} else {
 				for (let i=0; i<boxes.length; i++) {
-					boxes[boxClickedY][i].colour = "#ccc";
+					boxes[boxClickedY][i].colour = Colour.LightGrey;
 				}
 			}
 			// check the columns
@@ -456,7 +584,7 @@ function update() {
 				}
 			} else {
 				for (let i=0; i<boxes.length; i++) {
-					boxes[i][boxClickedX].colour = "#ccc";
+					boxes[i][boxClickedX].colour = Colour.LightGrey;
 				}
 			}
 			// check the rows
@@ -584,7 +712,11 @@ function draw() {
 	
 	update();
 
-	ctx.fillStyle = "white";
+	if (saveData.darkmode) {
+		ctx.fillStyle = "black";
+	} else {
+		ctx.fillStyle = "white";
+	}
 	ctx.fillRect(0,0,ctx.canvas.width, ctx.canvas.height);
 
 	for (let y=0; y<boxes.length;++y) {
@@ -646,7 +778,11 @@ function draw() {
 
 			ctx.fillRect(xPos+xNudge+(xSquish/2),yPos+yNudge+(ySquish/2),boxSize-xSquish, boxSize-ySquish);
 			ctx.globalAlpha = 1.0;
-			ctx.fillStyle = "white";
+			if (saveData.darkmode) {
+				ctx.fillStyle = "black";
+			} else {
+				ctx.fillStyle = "white";
+			}
 			ctx.fillText(boxes[y][x].letter,xPos+(boxSize/2)+xNudge,yPos+(boxSize/2)+yNudge);
 		}
 	}
@@ -680,6 +816,40 @@ function win() {
 
 }
 
+function toggleSettings(forceClose) {
+	var settingsbox = document.getElementById("settingsbox");
+	var settingsicon = document.getElementById("settings-icon");
+	if (forceClose || settingsbox.classList.contains("helpbox-expand")) {
+		settingsbox.classList.remove("helpbox-expand");
+		settingsbox.classList.add("helpbox-shrink");
+		settingsicon.classList.remove("fa-circle-xmark");
+		settingsicon.classList.add("fa-gear");
+	} else {
+		settingsbox.classList.remove("helpbox-shrink");
+		settingsbox.classList.add("helpbox-expand");
+		settingsicon.classList.remove("fa-gear");
+		settingsicon.classList.add("fa-circle-xmark");
+		toggleHelp(true);
+	}
+}
+
+function toggleHelp(forceClose) {
+	var helpbox = document.getElementById("helpbox");
+	var helpicon = document.getElementById("help-icon");
+	if (forceClose || helpbox.classList.contains("helpbox-expand")) {
+		helpbox.classList.remove("helpbox-expand");
+		helpbox.classList.add("helpbox-shrink");
+		helpicon.classList.remove("fa-circle-xmark");
+		helpicon.classList.add("fa-circle-question");
+	} else {
+		helpbox.classList.remove("helpbox-shrink");
+		helpbox.classList.add("helpbox-expand");
+		helpicon.classList.remove("fa-circle-question");
+		helpicon.classList.add("fa-circle-xmark");
+		toggleSettings(true);
+	}
+}
+
 function share() {
 	var guesses = saveData.emojiHistory.split("\n").length-1;
 	var sharestring = "Daily Slidle " + saveData.today + " - " + guesses + "\n";
@@ -709,6 +879,13 @@ function secondTimer() {
 
 }
 setInterval(secondTimer, 1000);
+
+function toggleColourBlind(checkbox) {
+	saveData.colourblind = !!checkbox.checked;
+}
+function toggleDarkMode(checkbox) {
+	saveData.darkmode = !!checkbox.checked;
+}
 </script>
 </head>
 <body onload='init()' style="width:100%;min-width:100%;margin:0">
@@ -730,23 +907,131 @@ setInterval(secondTimer, 1000);
 								<div class="sharebutton" onclick="share()">SHARE</div>
 							</div>
 						</td>
-				</tr>
+					</tr>
 				</table>
 			</div>
 		</div>
 	</div>
 	<div style="text-align:center; margin:auto;">
 		<div id="win-down" class="win-down win-down-shrink">
-							<div style="line-height:1.0">
-								<p><span style="font-weight:bold">COMPLETE!</span><br />
-								<span id="wordcount2">0</span> words used.</p>
-								<p>Next Slidle in <span id="timer2">10:30:08</span></p>
-								<div class="sharebutton" onclick="share()">SHARE</div>
-							</div>
+			<div style="line-height:1.0">
+				<p><span style="font-weight:bold">COMPLETE!</span><br />
+				<span id="wordcount2">0</span> words used.</p>
+				<p>Next Slidle in <span id="timer2">10:30:08</span></p>
+				<div class="sharebutton" onclick="share()">SHARE</div>
+			</div>
 		</div>
 	</div>
 	<div class="footer">
 		<div id="history" style="width:100%;overflow-x:auto;overflow-y:hidden;white-space:nowrap;text-align:center;touch-action:pan-x">
+		</div>
+	</div>
+
+	<div class="helpbox-container">
+		<div id="helpbox" class="helpbox helpbox-shrink">
+			<div style="padding:10px">
+				<p>In the 5x5 grid of letters, there are two overlapping five-letter words - one horizontal, one vertical. Your goal is to reveal both of them at once!</p>
+
+				<p>Click and drag to slide letters around the grid. When a valid five-letter word is made, its letters will change colour:</p>
+
+				<table class="block-types-table" style="display:inline-block; text-align:left; max-width:80%">
+					<tr><td style="white-space:nowrap"><span class="green demobox">G</span> </td><td>- </td><td> This letter is in a word, and is in the right place.</td></tr>
+					<tr><td><span class="yellow demobox">Y</span> </td><td>- </td><td>This letter is in a word, and goes somewhere in this row.</td></tr>
+					<tr><td><span class="orange demobox">O</span> </td><td>- </td><td>This letter is in a word, and goes somewhere in this column.</td></tr>
+					<tr><td><span class="darkgrey demobox">D</span> </td><td>- </td><td>This letter does not go anywhere in this row or column. (It could still go elsewhere!)</td></tr>
+				</table>
+				<p>Other possible colours:</p>
+				<table class="block-types-table" style="display:inline-block; text-align:left; max-width:80%">
+					<tr><td><span class="mediumgrey demobox">M</span> </td><td>- </td><td>This letter has been moved since guessing. You know it's not in this exact place, but making a word with it here might still reveal new information.</td></tr>
+					<tr><td><span class="lightgrey demobox">L</span> </td><td>- </td><td>No information yet.</td></tr>
+				</table>
+
+				<p>At the bottom of the screen, you can scroll through all the words you have made. Try to find both words in as few guesses as possible!</p>
+
+				<div style="display:inline-block; margin-bottom:24px">
+					<div style="display:inline-block;margin:30px">
+						<span class="lightgrey demobox">X</span>
+						<span class="lightgrey demobox">V</span>
+						<span class="lightgrey demobox">D</span>
+						<span class="lightgrey demobox">J</span>
+						<span class="mediumgrey demobox">S</span>
+						<br />
+						<span class="orange demobox">C</span>
+						<span class="orange demobox">H</span>
+						<span class="darkgrey demobox">A</span>
+						<span class="darkgrey demobox">I</span>
+						<span class="darkgrey demobox">R</span>
+						<br />
+						<span class="mediumgrey demobox">K</span>
+						<span class="mediumgrey demobox">B</span>
+						<span class="lightgrey demobox">Z</span>
+						<span class="lightgrey demobox">P</span>
+						<span class="lightgrey demobox">Y</span>
+						<br />
+						<span class="mediumgrey demobox">W</span>
+						<span class="yellow demobox">E</span>
+						<span class="lightgrey demobox">N</span>
+						<span class="mediumgrey demobox">T</span>
+						<span class="green demobox">F</span>
+						<br />
+						<span class="lightgrey demobox">L</span>
+						<span class="lightgrey demobox">G</span>
+						<span class="lightgrey demobox">U</span>
+						<span class="lightgrey demobox">O</span>
+						<span class="mediumgrey demobox">M</span>
+					</div>
+					<div style="display:inline-block;margin:30px">
+						<span class="mediumgrey demobox">B</span>
+						<span class="green demobox">M</span>
+						<span class="mediumgrey demobox">O</span>
+						<span class="lightgrey demobox">A</span>
+						<span class="lightgrey demobox">K</span>
+						<br />
+						<span class="lightgrey demobox">Z</span>
+						<span class="green demobox">U</span>
+						<span class="lightgrey demobox">T</span>
+						<span class="lightgrey demobox">G</span>
+						<span class="darkgrey demobox">R</span>
+						<br />
+						<span class="lightgrey demobox">X</span>
+						<span class="green demobox">S</span>
+						<span class="lightgrey demobox">W</span>
+						<span class="lightgrey demobox">N</span>
+						<span class="darkgrey demobox">D</span>
+						<br />
+						<span class="green demobox">C</span>
+						<span class="green demobox">H</span>
+						<span class="green demobox">I</span>
+						<span class="green demobox">E</span>
+						<span class="green demobox">F</span>
+						<br />
+						<span class="lightgrey demobox">L</span>
+						<span class="green demobox">Y</span>
+						<span class="lightgrey demobox">J</span>
+						<span class="lightgrey demobox">V</span>
+						<span class="lightgrey demobox">P</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="helpbox-container">
+		<div id="settingsbox" class="helpbox helpbox-shrink">
+			<div style="padding:10px">
+				<div style="font-size:24px; padding-top:20px; padding-bottom:20px">
+					<input type="checkbox" id="colourblind" name="colourblind" onchange="toggleColourBlind(this)"><label for="colourblind" style="padding:10px">Colour-Blind Mode</label>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="left-corner">
+		<div style="display:inline-block;font-weight:bold;font-size:24;color:#ccc" onclick="toggleSettings()">
+			<i id="settings-icon" class="fa-solid fa-gear" style="margin:20px"></i>
+		</div>
+	</div>
+	<div class="right-corner">
+		<div style="display:inline-block;font-weight:bold;font-size:24;color:#ccc" onclick="toggleHelp()">
+			<i id="help-icon" class="fa-solid fa-circle-question" style="margin:20px"></i>
 		</div>
 	</div>
 </body>
