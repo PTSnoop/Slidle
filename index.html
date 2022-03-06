@@ -40,7 +40,7 @@ p {
 .win-down {
 	display:inline-block;
 	background-color:#eee; 
-	height:160px; 
+	height:180px; 
 	width:300px;
 	overflow:hidden; 
 	transition: height 0.2s;
@@ -50,7 +50,7 @@ p {
 	height: 0px;
 }
 .win-down-expand {
-	height: 160px;
+	height: 180px;
 }
 .sharebutton {
 	display:inline-block;
@@ -193,8 +193,6 @@ function init() {
 	while (true) {
 		word1 = legitWords[Math.abs(rng.int32()) % legitWords.length];
 		word2 = legitWords[Math.abs(rng.int32()) % legitWords.length];
-		console.log(word1,word2);
-
 		var set1 = new Set(word1);
 		var set2 = new Set(word2);
 
@@ -268,7 +266,8 @@ onmousedown = function(e) {
 	columnLock = false;
 	rowLock = false;
 	var squaresCanvas = document.getElementById("squares");
-	if (e.path[0] != squaresCanvas) return;
+	console.log(e)
+	if (e.srcElement != squaresCanvas) return;
 
 	mouseIsDown = true;
 	if (e.touches) {
@@ -374,9 +373,7 @@ function checkRow(y) {
 		word += boxes[y][i].letter;
 	}
 	word = word.toLowerCase();
-	console.log(word);
 	if (allValids.includes(word)) {
-		console.log("Legit!");
 		return word;
 	}
 	return "";
@@ -387,7 +384,6 @@ function checkCol(x) {
 		word += boxes[i][x].letter;
 	}
 	word = word.toLowerCase();
-	console.log(word);
 	if (allValids.includes(word)) {
 		return word;
 	}
@@ -514,7 +510,6 @@ function update() {
 		photo--;
 		if (photo == 1) {
 			photo = 0;
-			console.log("Photo!");
 			var squares = document.getElementById("squares");
 			var history = document.getElementById("history");
 			var newCanvas = document.createElement("canvas");
@@ -522,6 +517,7 @@ function update() {
 			newCanvas.setAttribute("width","240");
 			newCanvas.setAttribute("height","240");
 			newCanvas.getContext("2d").drawImage(squares,0,0,240,240);
+			history.scrollLeft = history.scrollWidth;
 		}
 	}
 
@@ -663,16 +659,24 @@ function draw() {
 
 function win() {
 	var winbox;
+	var wordcount;
+	var guesses = saveData.emojiHistory.split("\n").length-1;
 	if (document.documentElement.clientHeight > 850) {
 		// we've got room for the vertical box
 		winbox = document.getElementById("win-down");
 		winbox.classList.remove("win-down-shrink");
 		winbox.classList.add("win-down-expand");
+		wordcount = document.getElementById("wordcount2");
+		wordcount.innerHTML = guesses.toString();
 	} else {
 		winbox = document.getElementById("win-right");
 		winbox.classList.remove("win-right-shrink");
 		winbox.classList.add("win-right-expand");
+		wordcount = document.getElementById("wordcount");
+		wordcount.innerHTML = guesses.toString();
 	}
+
+
 }
 
 function share() {
@@ -718,7 +722,8 @@ setInterval(secondTimer, 1000);
 					<tr style="text-align:center; vertical-align: middle">
 						<td style="height:300px; width:160px; background-color:#eee">
 							<div style="line-height:1.5">
-								<p style="font-weight:bold">COMPLETE!</p>
+								<p><span style="font-weight:bold">COMPLETE!</span><br />
+								<span id="wordcount">0</span> words used.</p>
 								<p>Next Slidle in<br />
 								<span id="timer">10:30:08</span></p>
 								<div class="sharebutton" onclick="share()">SHARE</div>
@@ -732,7 +737,8 @@ setInterval(secondTimer, 1000);
 	<div style="text-align:center; margin:auto;">
 		<div id="win-down" class="win-down win-down-shrink">
 							<div style="line-height:1.0">
-								<p style="font-weight:bold">COMPLETE!</p>
+								<p><span style="font-weight:bold">COMPLETE!</span><br />
+								<span id="wordcount2">0</span> words used.</p>
 								<p>Next Slidle in <span id="timer2">10:30:08</span></p>
 								<div class="sharebutton" onclick="share()">SHARE</div>
 							</div>
