@@ -108,6 +108,7 @@ input[type=checkbox]
 	bottom: 0;
 	width: 100%;
 	text-align: center;
+	z-index: -999;
 }
 
 .block-types-table {
@@ -798,7 +799,10 @@ function win() {
 	var winbox;
 	var wordcount;
 	var guesses = saveData.emojiHistory.split("\n").length-1;
-	if (document.documentElement.clientHeight > 850) {
+
+	var down = (document.documentElement.clientWidth < 610);
+
+	if (down) {
 		// we've got room for the vertical box
 		winbox = document.getElementById("win-down");
 		winbox.classList.remove("win-down-shrink");
