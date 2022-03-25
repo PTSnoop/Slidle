@@ -298,10 +298,11 @@ class SaveData {
 		if (this.practice) return;
 		console.log("Loading.");
 		this.colourblind = window.localStorage.getItem("colourblind") == "true";
-		this.emojiHistory = window.localStorage.getItem("emojiHistory");
-		if (!this.emojiHistory) this.emojiHistory = "";
 
 		if (window.localStorage.getItem("today") == this.today) {
+
+			this.emojiHistory = window.localStorage.getItem("emojiHistory");
+			if (!this.emojiHistory) this.emojiHistory = "";
 
 			var oldHistoryString = window.localStorage.getItem("history");
 			var oldHistory = JSON.parse(oldHistoryString);
