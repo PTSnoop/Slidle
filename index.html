@@ -941,6 +941,7 @@ function share() {
 	var guesses = saveData.emojiHistory.split("\n").length-1;
 	var sharestring = "Daily Slidle " + saveData.today + " - " + guesses + "\n";
 	sharestring += saveData.emojiHistory;
+	sharestring += "https://slidlegame.com";
 	navigator.clipboard.writeText(sharestring).then(() => {
 		alert("Copied to clipboard!");
 	})
